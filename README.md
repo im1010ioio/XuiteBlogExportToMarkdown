@@ -40,7 +40,7 @@
 
 `node convert.js`
 
-程式將會將每篇文章轉換為 Markdown 格式並儲存為獨立的 Markdown 檔案，儲存於 `export` 資料夾中。檔案名稱格式為 `日期-序號.md`，例如 `2023-01-01-1.md`。
+程式將會將每篇文章轉換為 Markdown 格式並儲存為獨立的 Markdown 檔案，儲存於 `export` 資料夾中。檔案名稱格式為 `post-序號-日期.md`，例如 `post-1-2023-01-01.md`。
 
 ## 注意事項
 

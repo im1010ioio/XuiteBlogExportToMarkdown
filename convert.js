@@ -156,7 +156,7 @@ sidebar: false
 ${markdownBody}`;
 
       // 將 Markdown 寫入檔案
-      fs.writeFileSync(`export/${date}-${serialNumber}.md`, markdown);
+      fs.writeFileSync(`export/post-${serialNumber}-${date}.md`, markdown);
 
       console.log(`輸出序號 (${serialNumber}) 為：${serialNumber}`);
       serialNumber++;
