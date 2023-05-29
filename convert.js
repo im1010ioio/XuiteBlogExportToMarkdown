@@ -3,6 +3,16 @@ const axios = require('axios');
 const TurndownService = require('turndown');
 const moment = require('moment');
 
+// 檢查並建立 export 資料夾
+if (!fs.existsSync('export')) {
+  fs.mkdirSync('export');
+}
+
+// 檢查並建立 export/image 資料夾
+if (!fs.existsSync('export/image')) {
+  fs.mkdirSync('export/image');
+}
+
 // 讀取文字檔案
 const data = fs.readFileSync('input.txt', 'utf8');
 
@@ -29,7 +39,7 @@ turndownService.addRule('handleImagesAndLinks', {
     if (node.nodeName === 'IMG') {
       const src = node.getAttribute('src');
       const alt = node.getAttribute('alt');
-      const filename = `image/${src.split('/').pop()}`;
+      const filename = `export/image/${src.split('/').pop()}`;
 
       // 下載圖片並儲存到本地
       downloadImage(src, filename);
@@ -54,13 +64,13 @@ turndownService.addRule('handleImagesAndLinks', {
           if (imageNode) {
             const alt = imageNode.getAttribute('alt');
             const src = imageNode.getAttribute('src');
-            const filename = `image/${src.split('/').pop()}`;
+            const filename = `export/image/${src.split('/').pop()}`;
 
             // 下載圖片並儲存到本地
             downloadImage(src, filename);
 
             // 取得圖片檔案名稱
-            const imageFilename = filename.split('/')[1];
+            const imageFilename = filename.split('/')[2];
 
             // 移除連結語法並保留圖片
             const markdownImage = `![${alt}](image/${imageFilename})`;
@@ -135,7 +145,7 @@ description: ${description}
 ${markdownBody}`;
 
     // 將 Markdown 寫入檔案
-    fs.writeFileSync(`${date}-${serialNumber}.md`, markdown);
+    fs.writeFileSync(`export/${date}-${serialNumber}.md`, markdown);
     
     console.log(`輸出序號 (${serialNumber}) 為：${serialNumber}`);
     serialNumber++;
