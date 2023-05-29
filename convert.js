@@ -94,45 +94,56 @@ turndownService.addRule('handleImagesAndLinks', {
 
 
 let serialNumber = 1;
+let processedCount = 0;
 
-// 迭代處理每篇文章
-articles.forEach((article, index) => {
-  // 使用正則表達式匹配所需資訊
-  const matchTitle = article.match(/TITLE: (.+)\n/);
-  const matchAuthor = article.match(/AUTHOR: (.+)\n/);
-  const matchDate = article.match(/DATE: (.+)\n/);
-  const matchCategory = article.match(/CATEGORY: (.+)\n/);
-  const matchStatus = article.match(/STATUS: (.+)\n/);
-  const matchBody = article.match(/BODY:\n([\s\S]+)\n/);
+// 遞迴處理 Markdown 檔案
+function processMarkdownFiles(startIndex) {
+  if (startIndex >= articles.length) {
+    console.log('所有 Markdown 檔案處理完成！');
+    return;
+  }
 
-  if (
-    matchTitle &&
-    matchAuthor &&
-    matchDate &&
-    matchCategory &&
-    matchStatus &&
-    matchBody
-  ) {
-    // 取得匹配結果
-    const title = matchTitle[1];
-    const author = matchAuthor[1];
-    const date = moment(matchDate[1], 'MM/DD/YYYY').format('YYYY-MM-DD');
-    const category = matchCategory[1];
-    const status = matchStatus[1];
-    const body = matchBody[1];
+  const endIndex = Math.min(startIndex + 10, articles.length);
 
-    // 轉換 HTML 到 Markdown
-    let markdownBody = turndownService.turndown(body);
+  for (let index = startIndex; index < endIndex; index++) {
+    const article = articles[index];
+    
+    // 使用正則表達式匹配所需資訊
+    const matchTitle = article.match(/TITLE: (.+)\n/);
+    const matchAuthor = article.match(/AUTHOR: (.+)\n/);
+    const matchDate = article.match(/DATE: (.+)\n/);
+    const matchCategory = article.match(/CATEGORY: (.+)\n/);
+    const matchStatus = article.match(/STATUS: (.+)\n/);
+    const matchBody = article.match(/BODY:\n([\s\S]+)\n/);
 
-    // 提取第一個段落作為 description，並移除空格
-    const description = markdownBody
-      .split('\n\n')[0]
-      .replace(/\*/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
+    if (
+      matchTitle &&
+      matchAuthor &&
+      matchDate &&
+      matchCategory &&
+      matchStatus &&
+      matchBody
+    ) {
+      // 取得匹配結果
+      const title = matchTitle[1];
+      const author = matchAuthor[1];
+      const date = moment(matchDate[1], 'MM/DD/YYYY').format('YYYY-MM-DD');
+      const category = matchCategory[1];
+      const status = matchStatus[1];
+      const body = matchBody[1];
 
-    // 建立 Markdown 格式
-    const markdown = `---
+      // 轉換 HTML 到 Markdown
+      let markdownBody = turndownService.turndown(body);
+
+      // 提取第一個段落作為 description，並移除空格
+      const description = markdownBody
+        .split('\n\n')[0]
+        .replace(/\*/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // 建立 Markdown 格式
+      const markdown = `---
 lang: zh-Hant-tw
 title: ${title}
 date: ${date}
@@ -144,14 +155,26 @@ sidebar: false
 
 ${markdownBody}`;
 
-    // 將 Markdown 寫入檔案
-    fs.writeFileSync(`export/${date}-${serialNumber}.md`, markdown);
-    
-    console.log(`輸出序號 (${serialNumber}) 為：${serialNumber}`);
-    serialNumber++;
-  } else {
-    console.error(`無法解析文章 #${index + 1}`);
-  }
-});
+      // 將 Markdown 寫入檔案
+      fs.writeFileSync(`export/${date}-${serialNumber}.md`, markdown);
 
-console.log('轉換完成！');
+      console.log(`輸出序號 (${serialNumber}) 為：${serialNumber}`);
+      serialNumber++;
+      processedCount++;
+    } else {
+      console.error(`無法解析文章 #${index + 1}`);
+    }
+  }
+
+  console.log(`已處理 ${processedCount} 個 Markdown 檔案`);
+
+  // 延遲處理下一批檔案
+  setTimeout(() => {
+    processMarkdownFiles(endIndex);
+  }, 10000); // 延遲 10 秒後處理下一批檔案
+}
+
+// 開始處理 Markdown 檔案
+processMarkdownFiles(0);
+
+console.log('開始轉換！');
