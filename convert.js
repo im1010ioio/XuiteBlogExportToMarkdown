@@ -58,8 +58,8 @@ turndownService.addRule('handleImagesAndLinks', {
       // 檢查連結內容是否為圖片
       const containsImage = children.some(child => child.nodeName === 'IMG');
       if (containsImage) {
-        // 如果連結以 //photo.xuite.net/ 開頭，且包含圖片，只移除圖片的連結
-        if (href.startsWith('//photo.xuite.net/')) {
+        // 如果連結以 //photo.xuite.net/ 或 http://photo.xuite.net/ 開頭，且包含圖片，只移除圖片的連結
+        if (href.startsWith('//photo.xuite.net/') || href.startsWith('http://photo.xuite.net/')) {
           const imageNode = children.find(child => child.nodeName === 'IMG');
           if (imageNode) {
             const alt = imageNode.getAttribute('alt');
@@ -133,13 +133,13 @@ articles.forEach((article, index) => {
 
     // 建立 Markdown 格式
     const markdown = `---
+lang: zh-Hant-tw
 title: ${title}
-author: ${author}
 date: ${date}
 category: 
   - ${category}
-status: ${status}
 description: ${description}
+sidebar: false
 ---
 
 ${markdownBody}`;

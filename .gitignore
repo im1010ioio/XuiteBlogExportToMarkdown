@@ -1,4 +1,5 @@
 node_modules
 export
 input.txt
+input-example.txt
 package-lock.json
