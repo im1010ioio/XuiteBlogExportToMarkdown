@@ -39,6 +39,8 @@
 
 輸出格式適用於 VuePress 的 [VuePress Theme Hope](https://theme-hope.vuejs.press/zh/)。
 
+您也可以依照您的需求調整程式碼的輸出格式。
+
 ## 注意事項
 
 - 程式預設將圖片下載到 `export/image/` 目錄下。
