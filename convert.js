@@ -23,91 +23,38 @@ const articles = data.split('-----\n');
 const turndownService = new TurndownService();
 
 // 下載圖片並儲存到本地
-async function downloadImage(url, filename) {
+async function downloadImage(url, folder, filename) {
   try {
-    const response = await axios.get(url, { responseType: 'arraybuffer' });
-    fs.writeFileSync(filename, response.data);
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+      maxContentLength: 10 * 1024 * 1024 * 50, // 500MB
+    });
+    fs.writeFileSync(`export/${folder}/${filename}`, response.data, 'binary');
+    console.log(`已下載圖片：${filename}`);
   } catch (error) {
     console.error('無法下載圖片:', error);
   }
+
+  // 延遲 2 秒後繼續處理下一張圖片
+  await new Promise(resolve => setTimeout(resolve, 2000));
 }
-
-// 處理 HTML 到 Markdown 的過程中處理圖片和連結
-turndownService.addRule('handleImagesAndLinks', {
-  filter: ['img', 'a'],
-  replacement: function (content, node) {
-    if (node.nodeName === 'IMG') {
-      const src = node.getAttribute('src');
-      const alt = node.getAttribute('alt');
-      const filename = `export/image/${src.split('/').pop()}`;
-
-      // 下載圖片並儲存到本地
-      downloadImage(src, filename);
-
-      // 取得圖片檔案名稱
-      const imageFilename = filename.split('/')[1];
-
-      // 移除圖片語法中的 <a> 標籤以及結尾部分
-      const markdownImage = `![${alt}](${imageFilename})`;
-      console.log(markdownImage);
-      return markdownImage;
-    } else if (node.nodeName === 'A') {
-      const href = node.getAttribute('href');
-      const children = Array.from(node.childNodes);
-
-      // 檢查連結內容是否為圖片
-      const containsImage = children.some(child => child.nodeName === 'IMG');
-      if (containsImage) {
-        // 如果連結以 //photo.xuite.net/ 或 http://photo.xuite.net/ 開頭，且包含圖片，只移除圖片的連結
-        if (href.startsWith('//photo.xuite.net/') || href.startsWith('http://photo.xuite.net/')) {
-          const imageNode = children.find(child => child.nodeName === 'IMG');
-          if (imageNode) {
-            const alt = imageNode.getAttribute('alt');
-            const src = imageNode.getAttribute('src');
-            const filename = `export/image/${src.split('/').pop()}`;
-
-            // 下載圖片並儲存到本地
-            downloadImage(src, filename);
-
-            // 取得圖片檔案名稱
-            const imageFilename = filename.split('/')[2];
-
-            // 移除連結語法並保留圖片
-            const markdownImage = `![${alt}](image/${imageFilename})`;
-            console.log(markdownImage);
-            return markdownImage;
-          }
-        }
-      } else {
-        // 保留其他文字連結
-        const linkText = children.map(child => child.textContent).join('');
-        const markdownLink = `[${linkText}](${href})`;
-        console.log(markdownLink);
-        return markdownLink;
-      }
-    }
-
-    // 預設回傳空字串，表示不處理其他節點
-    return '';
-  }
-});
 
 
 let serialNumber = 1;
 let processedCount = 0;
 
 // 遞迴處理 Markdown 檔案
-function processMarkdownFiles(startIndex) {
+async function processMarkdownFiles(startIndex) {
   if (startIndex >= articles.length) {
     console.log('所有 Markdown 檔案處理完成！');
     return;
   }
-
-  const endIndex = Math.min(startIndex + 10, articles.length);
+  // 每次處理 1 份檔案
+  const endIndex = Math.min(startIndex + 1, articles.length);
 
   for (let index = startIndex; index < endIndex; index++) {
     const article = articles[index];
-    
+
     // 使用正則表達式匹配所需資訊
     const matchTitle = article.match(/TITLE: (.+)\n/);
     const matchAuthor = article.match(/AUTHOR: (.+)\n/);
@@ -155,8 +102,26 @@ sidebar: false
 
 ${markdownBody}`;
 
-      // 將 Markdown 寫入檔案
-      fs.writeFileSync(`export/post-${serialNumber}-${date}.md`, markdown);
+      // 建立資料夾
+      const folder = `image/${serialNumber}`;
+      if (!fs.existsSync(`export/${folder}`)) {
+        fs.mkdirSync(`export/${folder}`, { recursive: true });
+      }
+
+      // 在 Markdown 中處理圖片連結並下載圖片
+      const markdownWithImages = markdown.replace(/!\[([^\]]+)\]\(([^)]+)\)/g, (match, alt, src) => {
+        const filename = src.split('/').pop();
+
+        // 下載圖片並儲存到本地
+        downloadImage(src, folder, filename);
+
+        // 回傳新的圖片連結格式
+        return `![${alt}](${folder}/${filename})`;
+        // 刪除圖片外的連結
+      }).replace(/\[!\[([^\]]*)\]\(([^)]+)\)\]\([^)]+\)/g, '![$1]($2)');
+
+      // 更新 Markdown 內容
+      fs.writeFileSync(`export/post-${serialNumber}-${date}.md`, markdownWithImages);
 
       console.log(`輸出序號 (${serialNumber}) 為：${serialNumber}`);
       serialNumber++;
@@ -171,7 +136,7 @@ ${markdownBody}`;
   // 延遲處理下一批檔案
   setTimeout(() => {
     processMarkdownFiles(endIndex);
-  }, 10000); // 延遲 10 秒後處理下一批檔案
+  }, 20000); // 延遲 20 秒後處理下一批檔案
 }
 
 // 開始處理 Markdown 檔案
